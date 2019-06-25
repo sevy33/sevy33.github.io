@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Dists.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FuzzTest (Feb 4, 2019 10:55:08 PM)</a> &gt; <a href="../../index.html" class="el_group">QuadClassFuzz</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">quadclassfuzz</a> &gt; <span class="el_source">Dists.java</span></div><h1>Dists.java</h1><pre class="source lang-java linenums">package quadclassfuzz;
+
+public class Dists {
+	private double distAB;
+    private double distBC;
+    private double distCD;
+    private double distDA;
+	
+<span class="fc" id="L9">	public Dists(double xB, double yB, double xC, double yC, double xD, double yD) {   </span>
+<span class="fc" id="L10">	    this.distAB = findDist(0, 0, xB, yB);</span>
+<span class="fc" id="L11">	    this.distBC = findDist(xB, yB, xC, yC);</span>
+<span class="fc" id="L12">	    this.distCD = findDist(xC, yC, xD, yD);</span>
+<span class="fc" id="L13">	    this.distDA = findDist(xD, yD, 0, 0);</span>
+<span class="fc" id="L14">	}</span>
+	
+	public double findDist(double x1, double y1, double x2, double y2) {
+<span class="fc" id="L17">	    double powX = Math.pow((x2 - x1), 2);</span>
+<span class="fc" id="L18">	    double powY = Math.pow((y2 - y1), 2);</span>
+<span class="fc" id="L19">	    double dist = Math.sqrt((powX + powY));</span>
+<span class="fc" id="L20">	    return dist;</span>
+	}
+	
+	public boolean isSquareOrRhom() {
+<span class="fc" id="L24">	    double sideTotal = 4 * this.distAB;</span>
+<span class="fc" id="L25">	    double sum = this.distAB + this.distBC + this.distCD + this.distDA;</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">	    if(sideTotal == sum) return true;</span>
+<span class="fc" id="L27">	    return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span>FuzzTest (Feb 4, 2019 10:55:08 PM)</div></body></html>

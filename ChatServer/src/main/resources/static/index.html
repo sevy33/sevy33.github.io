@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">  
+<head>    
+	<meta charset="utf-8">    
+	<title>title</title>  
+	<!--<link rel="stylesheet" type="text/css" href="./firstStyleSheet.css" />-->
+	<script type="text/javascript" src="webchat.js"></script>
+	<style>
+		.pad {
+			padding-bottom: 5px;
+		}
+		.container {
+			background-color: grey;
+			width: 90%;
+			height: 90%;
+		}
+		.headCol {
+			color: purple;
+		}
+	</style>
+</head>  
+<body id="main" class="container">
+	<div>
+		<h1 class="headCol">Login</h1>
+
+		<form id="valueform">
+		  	<div class="pad">
+		  		Username: 
+		  		<input type="text" name="x">
+		 	</div>
+		 	<div class="pad">
+		  		Chatroom: 
+		  		<input type="text" name="y">
+		 	</div>
+		</form>
+
+		<button onclick="routeChat()">Join Chat</button>
+	</div>
+
+</body>
+</html>

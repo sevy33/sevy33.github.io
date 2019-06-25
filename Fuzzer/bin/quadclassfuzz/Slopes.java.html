@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Slopes.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FuzzTest (Feb 4, 2019 10:55:08 PM)</a> &gt; <a href="../../index.html" class="el_group">QuadClassFuzz</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">quadclassfuzz</a> &gt; <span class="el_source">Slopes.java</span></div><h1>Slopes.java</h1><pre class="source lang-java linenums">package quadclassfuzz;
+
+public class Slopes {
+	private double slopeAB;
+    private double slopeBC;
+    private double slopeCD;
+    private double slopeDA;
+    
+<span class="fc" id="L9">    public Slopes(double xB, double yB, double xC, double yC, double xD, double yD) {</span>
+<span class="fc" id="L10">    	this.slopeAB = findSlope(0, 0, xB, yB);</span>
+<span class="fc" id="L11">        this.slopeBC = findSlope(xB, yB, xC, yC);</span>
+<span class="fc" id="L12">        this.slopeCD = findSlope(xC, yC, xD, yD);</span>
+<span class="fc" id="L13">        this.slopeDA = findSlope(xD, yD, 0, 0);</span>
+<span class="fc" id="L14">    }</span>
+    
+    public double findSlope(double x1, double y1, double x2, double y2) {
+<span class="fc" id="L17">        double slope = ((y2 - y1)/(x2 - x1));</span>
+<span class="fc bfc" id="L18" title="All 4 branches covered.">        if(slope == Double.POSITIVE_INFINITY || slope == Double.NEGATIVE_INFINITY) slope = -0;</span>
+<span class="fc" id="L19">        return slope;</span>
+    }
+    
+    public boolean isParallelograms() {
+<span class="fc bfc" id="L23" title="All 4 branches covered.">        if(this.slopeAB == this.slopeCD &amp;&amp; this.slopeBC == this.slopeDA) return true;</span>
+<span class="fc" id="L24">        return false;</span>
+    }
+    
+    public boolean isTrapezoid() {
+<span class="pc bpc" id="L28" title="1 of 4 branches missed.">        if(this.slopeAB == this.slopeCD &amp;&amp; this.slopeBC != this.slopeDA) return true;</span>
+<span class="pc bpc" id="L29" title="2 of 4 branches missed.">        else if(this.slopeAB != this.slopeCD &amp;&amp; this.slopeBC == this.slopeDA) return true;</span>
+<span class="fc" id="L30">        return false;</span>
+    }
+
+	public boolean isSquare() {
+<span class="pc bpc" id="L34" title="1 of 4 branches missed.">        if(this.slopeAB == -this.slopeBC &amp;&amp; this.slopeCD == -this.slopeDA) return true;</span>
+<span class="fc" id="L35">        return false;</span>
+    }
+	
+	public double getSlopeAB() {
+<span class="fc" id="L39">		return slopeAB;</span>
+	}
+
+	public double getSlopeBC() {
+<span class="fc" id="L43">		return slopeBC;</span>
+	}
+
+	public double getSlopeCD() {
+<span class="fc" id="L47">		return slopeCD;</span>
+	}
+
+	public double getSlopeDA() {
+<span class="fc" id="L51">		return slopeDA;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span>FuzzTest (Feb 4, 2019 10:55:08 PM)</div></body></html>

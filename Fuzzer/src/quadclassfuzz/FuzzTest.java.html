@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FuzzTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">FuzzTest (Feb 4, 2019 10:55:08 PM)</a> &gt; <a href="../../index.html" class="el_group">QuadClassFuzz</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">quadclassfuzz</a> &gt; <span class="el_source">FuzzTest.java</span></div><h1>FuzzTest.java</h1><pre class="source lang-java linenums">package quadclassfuzz;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
+
+<span class="fc" id="L9">public class FuzzTest {</span>
+<span class="fc" id="L10">	private ArrayList&lt;String&gt; errorlog = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L11">	private ArrayList&lt;String&gt; fuzzErr = new ArrayList&lt;String&gt;();</span>
+
+	public static void main(String[] args) throws IOException {
+<span class="fc" id="L14">		FuzzTest fuzz = new FuzzTest();</span>
+<span class="fc" id="L15">		ArrayList&lt;String&gt; shapeTest = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L16">		Random r = new Random();</span>
+		
+		double xB, yB, xC, yC, xD, yD;
+		
+<span class="fc bfc" id="L20" title="All 2 branches covered.">		for(int i=0;i &lt; 1000;i++) {</span>
+<span class="fc" id="L21">			xB = 0 + (100 - 0) * r.nextDouble();</span>
+<span class="fc" id="L22">			yB = 0 + (100 - 0) * r.nextDouble();</span>
+<span class="fc" id="L23">			xC = 0 + (100 - 0) * r.nextDouble();</span>
+<span class="fc" id="L24">			yC = 0 + (100 - 0) * r.nextDouble();</span>
+<span class="fc" id="L25">			xD = 0 + (100 - 0) * r.nextDouble();</span>
+<span class="fc" id="L26">			yD = 0 + (100 - 0) * r.nextDouble();</span>
+			
+<span class="fc" id="L28">			fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L29">		    Slopes slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L30">		    Dists dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L31">		    shapeTest.add(fuzz.printShape(slope, dist));</span>
+		    
+<span class="fc" id="L33">		    String fileName = &quot;testCase&quot; + i;</span>
+<span class="fc" id="L34">		    File yourFile = new File(fileName);</span>
+<span class="fc" id="L35">		    yourFile.createNewFile(); // if file already exists will do nothing </span>
+<span class="fc" id="L36">		    FileOutputStream oFile = new FileOutputStream(yourFile, false);</span>
+<span class="fc" id="L37">		    String output = &quot;xA,yA = 0,0 | xB,yB = &quot; + xB + &quot;,&quot; + yB + &quot; | xC,yC = &quot; + xC + &quot;,&quot; + yC + &quot; | xD,yD = &quot; + xD + &quot;,&quot; + yD;</span>
+<span class="fc" id="L38">		    oFile.write(output.getBytes());</span>
+<span class="fc" id="L39">		    oFile.flush();</span>
+<span class="fc" id="L40">		    oFile.close();</span>
+		    
+		    //PrintWriter writer = new PrintWriter(&quot;test&quot; + i + &quot;.txt&quot;, &quot;UTF-8&quot;);
+		    //writer.println(&quot;xA,yA = 0,0 xB,yB = &quot; + xB + &quot;,&quot; + yB + &quot; xC,yC = &quot; + xC + &quot;,&quot; + yC + &quot; xD,y d= &quot; + xD + &quot;,&quot; + yD);
+		    //writer.close();
+		}
+		
+		// Square
+<span class="fc" id="L48">	    xB = 6; yB = 0; xC = 6; yC = 6; xD = 0; yD = 6;</span>
+<span class="fc" id="L49">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L50">	    Slopes slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L51">	    Dists dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L52">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Rectangle
+<span class="fc" id="L55">	    xB = 6; yB = 0; xC = 6; yC = 10; xD = 0; yD = 10;</span>
+<span class="fc" id="L56">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L57">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L58">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L59">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Rhombus
+<span class="fc" id="L62">	    xB = 5; yB = 0; xC = 8; yC = 4; xD = 3; yD = 4;</span>
+<span class="fc" id="L63">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L64">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L65">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L66">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Trapezoid
+<span class="fc" id="L69">	    xB = 6; yB = 0; xC = 4; yC = 5; xD = 2; yD = 5;</span>
+<span class="fc" id="L70">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L71">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L72">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L73">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Kite
+<span class="fc" id="L76">	    xB = 6; yB = 0; xC = 8; yC = 4; xD = 2; yD = 6;</span>
+<span class="fc" id="L77">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L78">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L79">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L80">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Invalid number between 0 and 100
+<span class="fc" id="L83">	    xB = -1; yB = 0; xC = 8; yC = 4; xD = 2; yD = 6;</span>
+<span class="fc" id="L84">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L85">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L86">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L87">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Two Points the same
+<span class="fc" id="L90">	    xB = 6; yB = 0; xC = 5; yC = 3; xD = 5; yD = 3;</span>
+<span class="fc" id="L91">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L92">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L93">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L94">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Linear Cordinates
+<span class="fc" id="L97">	    xB = 2; yB = 2; xC = 4; yC = 4; xD = 6; yD = 6;</span>
+<span class="fc" id="L98">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L99">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L100">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L101">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Point C line cross
+<span class="fc" id="L104">	    xB = 4; yB = 4; xC = 6; yC = 2; xD = 2; yD = 4;</span>
+<span class="fc" id="L105">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L106">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L107">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L108">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+	    // Point D line cross
+<span class="fc" id="L111">	    xB = 0; yB = 6; xC = 6; yC = 6; xD = 8; yD = 4;</span>
+<span class="fc" id="L112">	    fuzz.checkPoints(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L113">	    slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L114">	    dist = new Dists(xB, yB, xC, yC, xD, yD);</span>
+<span class="fc" id="L115">	    shapeTest.add(fuzz.printShape(slope, dist));</span>
+	    
+<span class="fc bfc" id="L117" title="All 2 branches covered.">	    for(String s : shapeTest) {</span>
+<span class="fc" id="L118">	    	System.out.println(s);</span>
+	    }
+		
+		
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if(fuzz.getFuzzerSize() &gt; 0) System.out.println(&quot;Error&quot;);</span>
+<span class="fc" id="L123">		else System.out.println(&quot;OK&quot;);</span>
+<span class="fc" id="L124">	}</span>
+	
+	public void checkPoints(double xB, double yB, double xC, double yC, double xD, double yD) {
+		try {
+<span class="fc" id="L128">			ArrayList&lt;Double&gt; points = new ArrayList&lt;Double&gt;();</span>
+<span class="fc" id="L129">			points.add(0.0);</span>
+<span class="fc" id="L130">		    points.add(0.0);</span>
+<span class="fc" id="L131">		    points.add(xB);</span>
+<span class="fc" id="L132">		    points.add(yB);</span>
+<span class="fc" id="L133">		    points.add(xC);</span>
+<span class="fc" id="L134">		    points.add(yC);</span>
+<span class="fc" id="L135">		    points.add(xD);</span>
+<span class="fc" id="L136">		    points.add(yD);</span>
+		    
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		    for(int i=0;i &lt; points.size();i++) {</span>
+		        //if(points[i] == NULL) throw &quot;Invalid number of points&quot;;
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">		        if(points.get(i) &lt; 0 || points.get(i) &gt; 100) errorlog.add(&quot;Values must be between 0 and 100&quot;);</span>
+		    }
+		    
+<span class="fc" id="L143">		    int i = 0;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		    while(i &lt; points.size()) {</span>
+<span class="fc" id="L145">		        double xCheck = points.get(i);</span>
+<span class="fc" id="L146">		        double yCheck = points.get(i+1);</span>
+		        
+<span class="fc" id="L148">		        int j = i + 2;</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		        while(j &lt; points.size()) {</span>
+<span class="fc bfc" id="L150" title="All 4 branches covered.">		            if(xCheck == points.get(j) &amp;&amp; yCheck == points.get(j+1)) errorlog.add(&quot;Coordinates cannot be the same&quot;);</span>
+<span class="fc" id="L151">		            j+=2;</span>
+		        }
+<span class="fc" id="L153">		        i+=2;</span>
+		    }
+		    
+<span class="fc" id="L156">		    Slopes slope = new Slopes(xB, yB, xC, yC, xD, yD);</span>
+		    
+<span class="fc bfc" id="L158" title="All 4 branches covered.">		    if(slope.getSlopeAB() == slope.getSlopeBC() &amp;&amp; slope.getSlopeBC() == slope.getSlopeCD()) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		        if(slope.getSlopeAB() + slope.getSlopeBC() + slope.getSlopeBC() + slope.getSlopeDA() != 0) errorlog.add(&quot;Points cannot be colinear&quot;);</span>
+		    }
+		    
+<span class="fc bfc" id="L162" title="All 4 branches covered.">		    if(xC &gt; xB &amp;&amp; yC &lt; yB) errorlog.add(&quot;Lines cannot cross&quot;);</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">		    if(xD &gt; xC &amp;&amp; yD &lt; yC) errorlog.add(&quot;Lines cannot cross&quot;);</span>
+		    
+<span class="pc" id="L165">		} catch(Exception e) {</span>
+<span class="nc" id="L166">			fuzzErr.add(e.toString());</span>
+		}
+<span class="fc" id="L168">	}</span>
+	
+	public String printShape(Slopes slope, Dists dist) {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">	    if(slope.isParallelograms()) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">	        if(dist.isSquareOrRhom()) {</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">	            if(slope.isSquare()) return &quot;Square&quot;;</span>
+<span class="fc" id="L174">	            else return &quot;Rhombus&quot;;</span>
+	        } else {
+<span class="fc" id="L176">	            return &quot;Rectangle&quot;;</span>
+	        }
+	    } else {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">	        if(slope.isTrapezoid()) return &quot;Trapezoid&quot;;</span>
+<span class="fc" id="L180">	        else return &quot;Kite&quot;;</span>
+	    }
+	}
+	
+	public int getFuzzerSize() {
+<span class="fc" id="L185">		return fuzzErr.size();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span>FuzzTest (Feb 4, 2019 10:55:08 PM)</div></body></html>

@@ -1,0 +1,256 @@
+/Users/devinsevy/quadralateral_classifier/assignment3/assignment3/ClassifierTest.cpp:
+    1|       |//
+    2|       |//  ClassifierTest.cpp
+    3|       |//  assignment3
+    4|       |//
+    5|       |//  Created by Devin Sevy on 1/26/19.
+    6|       |//  Copyright © 2019 Devin Sevy. All rights reserved.
+    7|       |//
+    8|       |
+    9|       |#include "ClassifierTest.hpp"
+   10|       |#include <iostream>
+   11|       |#include <vector>
+   12|       |#include <math.h>
+   13|       |#include <iomanip>
+   14|       |#include <exception>
+   15|       |#include <string>
+   16|       |#define PI 3.14159265
+   17|       |using namespace std;
+   18|       |
+   19|       |vector<string> errorlog;
+   20|       |
+   21|     20|struct slopes slopeStruct(double xB, double yB, double xC, double yC, double xD, double yD) {
+   22|     20|    struct slopes slope;
+   23|     20|    
+   24|     20|    slope.slopeAB = findSlope(0, 0, xB, yB);
+   25|     20|    slope.slopeBC = findSlope(xB, yB, xC, yC);
+   26|     20|    slope.slopeCD = findSlope(xC, yC, xD, yD);
+   27|     20|    slope.slopeDA = findSlope(xD, yD, 0, 0);
+   28|     20|    
+   29|     20|    return slope;
+   30|     20|}
+   31|       |
+   32|     10|struct dists distsStruct(double xB, double yB, double xC, double yC, double xD, double yD) {
+   33|     10|    struct dists dist;
+   34|     10|    
+   35|     10|    dist.distAB = findDist(0, 0, xB, yB);
+   36|     10|    dist.distBC = findDist(xB, yB, xC, yC);
+   37|     10|    dist.distCD = findDist(xC, yC, xD, yD);
+   38|     10|    dist.distDA = findDist(xD, yD, 0, 0);
+   39|     10|    
+   40|     10|    return dist;
+   41|     10|}
+   42|       |
+   43|     80|double findSlope(double x1, double y1, double x2, double y2) {
+   44|     80|    double slope = ((y2 - y1)/(x2 - x1));
+   45|     80|    if(slope == +INFINITY || slope == -INFINITY) slope = -0;
+   46|     80|    return slope;
+   47|     80|}
+   48|       |
+   49|     40|double findDist(double x1, double y1, double x2, double y2) {
+   50|     40|    double powX = pow((x2 - x1), 2);
+   51|     40|    double powY = pow((y2 - y1), 2);
+   52|     40|    double dist = sqrt((powX + powY));
+   53|     40|    return dist;
+   54|     40|}
+   55|       |
+   56|     10|bool isParallelograms(slopes &slope) {
+   57|     10|    if(slope.slopeAB == slope.slopeCD && slope.slopeBC == slope.slopeDA) return true;
+   58|      6|    return false;
+   59|      6|}
+   60|       |
+   61|      6|bool isTrapezoid(slopes &slope) {
+   62|      6|    if(slope.slopeAB == slope.slopeCD && slope.slopeBC != slope.slopeDA) return true;
+   63|      5|    else if(slope.slopeAB != slope.slopeCD && slope.slopeBC == slope.slopeDA) return true;
+   64|      5|    return false;
+   65|      5|}
+   66|       |
+   67|      4|bool isSquareOrRhom(dists &dist) {
+   68|      4|    double sideTotal = 4 * dist.distAB;
+   69|      4|    double sum = dist.distAB + dist.distBC + dist.distCD + dist.distDA;
+   70|      4|    if(sideTotal == sum) return true;
+   71|      2|    return false;
+   72|      2|}
+   73|       |
+   74|      2|bool isSquare(slopes &slope) {
+   75|      2|    if(slope.slopeAB == -slope.slopeBC && slope.slopeCD == -slope.slopeDA) return true;
+   76|      1|    return false;
+   77|      1|}
+   78|       |
+   79|     10|void printShape(slopes &slope, dists &dist) {
+   80|     10|    if(isParallelograms(slope)) {
+   81|      4|        if(isSquareOrRhom(dist)) {
+   82|      2|            if(isSquare(slope)) cout << "Square" << endl;
+   83|      1|            else cout << "Rhombus" << endl;
+   84|      2|        } else {
+   85|      2|            cout << "Rectangle" << endl;
+   86|      2|        }
+   87|      6|    } else {
+   88|      6|        if(isTrapezoid(slope)) cout << "Trapezoid" << endl;
+   89|      5|        else cout << "Kite" << endl;
+   90|      6|    }
+   91|     10|}
+   92|       |
+   93|     10|void checkPoints(double xB, double yB, double xC, double yC, double xD, double yD) {
+   94|     10|    vector<double> points;
+   95|     10|    points.push_back(0);
+   96|     10|    points.push_back(0);
+   97|     10|    points.push_back(xB);
+   98|     10|    points.push_back(yB);
+   99|     10|    points.push_back(xC);
+  100|     10|    points.push_back(yC);
+  101|     10|    points.push_back(xD);
+  102|     10|    points.push_back(yD);
+  103|     10|    
+  104|     90|    for(int i=0;i < points.size();i++) {
+  105|     80|        //if(points[i] == NULL) throw "Invalid number of points";
+  106|     80|        if(points[i] < 0 || points[i] > 100) errorlog.push_back("Values must be between 0 and 100");
+  107|     80|    }
+  108|     10|    
+  109|     10|    int i = 0;
+  110|     50|    while(i < points.size()) {
+  111|     40|        double xCheck = points[i];
+  112|     40|        double yCheck = points[i+1];
+  113|     40|        
+  114|     40|        int j = i + 2;
+  115|    100|        while(j < points.size()) {
+  116|     60|            if(xCheck == points[j] && yCheck == points[j+1]) errorlog.push_back("Coordinates cannot be the same");
+  117|     60|            j+=2;
+  118|     60|        }
+  119|     40|        i+=2;
+  120|     40|    }
+  121|     10|    
+  122|     10|    struct slopes slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+  123|     10|    
+  124|     10|    if(slope.slopeAB == slope.slopeBC && slope.slopeBC == slope.slopeCD) {
+  125|      3|        if(slope.slopeAB + slope.slopeBC + slope.slopeCD + slope.slopeDA != 0) errorlog.push_back("Points cannot be colinear");
+  126|      3|    }
+  127|     10|    
+  128|     10|    if(xC > xB && yC < yB) errorlog.push_back("Lines cannot cross");
+  129|     10|    if(xD > xC && yD < yC) errorlog.push_back("Lines cannot cross");
+  130|     10|}
+  131|       |
+  132|      1|vector<string> getErrorLog() {
+  133|      1|    return errorlog;
+  134|      1|}
+
+/Users/devinsevy/quadralateral_classifier/assignment3/assignment3/main.cpp:
+    1|       |//
+    2|       |//  main.cpp
+    3|       |//  assignment3
+    4|       |//
+    5|       |//  Created by Devin Sevy on 1/16/19.
+    6|       |//  Copyright © 2019 Devin Sevy. All rights reserved.
+    7|       |//
+    8|       |
+    9|       |#include "ClassifierTest.hpp"
+   10|       |#include <iostream>
+   11|       |#include <vector>
+   12|       |#include <math.h>
+   13|       |#include <iomanip>
+   14|       |#define PI 3.14159265
+   15|       |using namespace std;
+   16|       |
+   17|       |double xB, yB, xC, yC, xD, yD;
+   18|       |
+   19|      1|int main(int argc, const char * argv[]) {
+   20|      1|    // Square
+   21|      1|    xB = 6; yB = 0; xC = 6; yC = 6; xD = 0; yD = 6;
+   22|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   23|      1|    struct slopes slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   24|      1|    struct dists dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   25|      1|    printShape(slope, dist);
+   26|      1|    
+   27|      1|    // Rectangle
+   28|      1|    xB = 6; yB = 0; xC = 6; yC = 10; xD = 0; yD = 10;
+   29|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   30|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   31|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   32|      1|    printShape(slope, dist);
+   33|      1|    
+   34|      1|    // Rhombus
+   35|      1|    xB = 5; yB = 0; xC = 8; yC = 4; xD = 3; yD = 4;
+   36|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   37|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   38|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   39|      1|    printShape(slope, dist);
+   40|      1|    
+   41|      1|    // Trapezoid
+   42|      1|    xB = 6; yB = 0; xC = 4; yC = 5; xD = 2; yD = 5;
+   43|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   44|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   45|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   46|      1|    printShape(slope, dist);
+   47|      1|    
+   48|      1|    // Kite
+   49|      1|    xB = 6; yB = 0; xC = 8; yC = 4; xD = 2; yD = 6;
+   50|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   51|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   52|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   53|      1|    printShape(slope, dist);
+   54|      1|    
+   55|      1|    // Invalid number between 0 and 100
+   56|      1|    xB = -1; yB = 0; xC = 8; yC = 4; xD = 2; yD = 6;
+   57|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   58|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   59|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   60|      1|    printShape(slope, dist);
+   61|      1|    
+   62|      1|    // Two Points the same
+   63|      1|    xB = 6; yB = 0; xC = 5; yC = 3; xD = 5; yD = 3;
+   64|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   65|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   66|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   67|      1|    printShape(slope, dist);
+   68|      1|    
+   69|      1|    // Linear Cordinates
+   70|      1|    xB = 2; yB = 2; xC = 4; yC = 4; xD = 6; yD = 6;
+   71|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   72|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   73|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   74|      1|    printShape(slope, dist);
+   75|      1|    
+   76|      1|    // Point C line cross
+   77|      1|    xB = 4; yB = 4; xC = 6; yC = 2; xD = 2; yD = 4;
+   78|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   79|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   80|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   81|      1|    printShape(slope, dist);
+   82|      1|    
+   83|      1|    // Point D line cross
+   84|      1|    xB = 0; yB = 6; xC = 6; yC = 6; xD = 8; yD = 4;
+   85|      1|    checkPoints(xB, yB, xC, yC, xD, yD);
+   86|      1|    slope = slopeStruct(xB, yB, xC, yC, xD, yD);
+   87|      1|    dist = distsStruct(xB, yB, xC, yC, xD, yD);
+   88|      1|    printShape(slope, dist);
+   89|      1|    
+   90|      1|    
+   91|      1|    vector<string> logs = getErrorLog();
+   92|      6|    for(int i=0;i < logs.size();i++) {
+   93|      5|        cout << i+1 << ": " << logs[i] << endl;
+   94|      5|    }
+   95|      1|    /*
+   96|      1|    xB = 0; yB = 0; xC = 0; yC = 0; xD = 0; yD = 0;
+   97|      1|    cout << "Enter Cordinates Counterclockwise followed by a space(first coordinates are 0,0)\n";
+   98|      1|    cout << "xB yB: ";
+   99|      1|    cin >> xB >> yB;
+  100|      1|    if(cin.fail()) {
+  101|      1|        cout << "Invalid Input";
+  102|      1|        exit(0);
+  103|      1|    }
+  104|      1|    cout << "xC yC: ";
+  105|      1|    cin >> xC >> yC;
+  106|      1|    if(cin.fail()) {
+  107|      1|        cout << "Invalid Input";
+  108|      1|        exit(0);
+  109|      1|    }
+  110|      1|    cout << "xD yD: ";
+  111|      1|    cin >> xD >> yD;
+  112|      1|    if(cin.fail()) {
+  113|      1|        cout << "Invalid Input";
+  114|      1|        exit(0);
+  115|      1|    }
+  116|      1|    */
+  117|      1|    
+  118|      1|    return 0;
+  119|      1|}
