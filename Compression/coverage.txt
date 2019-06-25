@@ -1,0 +1,597 @@
+/Users/oliveryu/Desktop/CompressionTest/compress.cpp:
+    1|       |#include "Header.h"
+    2|       |#include <fstream>
+    3|       |#include <vector>
+    4|       |#include <iostream>
+    5|       |#include <MacTypes.h>
+    6|       |
+    7|       |extern const std::string huff[];
+    8|       |// opens and returns a binary fileStream to the compressed output file
+    9|      0|std::ofstream createOutputFile(std::string filename) {
+   10|      0|    std::ofstream outputFile;
+   11|      0|    outputFile.open(filename.c_str(), std::ios::out | std::ios::binary);
+   12|      0|    return outputFile;
+   13|      0|}
+   14|       |
+   15|       |// writes header bytes to the compressed file
+   16|      0|void writeHeader(std::ofstream &outputFile, const unsigned width, const unsigned height) {
+   17|      0|    outputFile.write("PBMC", strlen("PBMC"));
+   18|      0|    outputFile.write(reinterpret_cast<const char *>(&width), sizeof(width));
+   19|      0|    outputFile.write(reinterpret_cast<const char *>(&height), sizeof(height));
+   20|      0|}
+   21|       |
+   22|       |// encodes blocks and writes the compressed version to the output file
+   23|      0|void encodeBlocks(const std::vector<uint16_t> &Data, std::ofstream &outputFile) {
+   24|      0|    std::string codes;
+   25|      0|    for (uint16_t block : Data) {
+   26|      0|        codes += huff[block];
+   27|      0|        while (codes.length() >= 8) {
+   28|      0|            std::bitset<8> byte(codes);
+   29|      0|            codes.erase(0, 8);
+   30|      0|            outputFile.write(reinterpret_cast<const char *>(&byte), 1);
+   31|      0|        }
+   32|      0|    }
+   33|      0|    if (codes.length() > 0) {
+   34|      0|        int padding = static_cast<int>(8 - codes.length());
+   35|      0|        for (int i = 0; i < padding; ++i) {
+   36|      0|            codes += '0';
+   37|      0|        }
+   38|      0|        std::bitset<8> byte(codes);
+   39|      0|        outputFile.write(reinterpret_cast<const char *>(&byte), 1);
+   40|      0|    }
+   41|      0|}
+   42|       |
+   43|       |// reads in, encodes and writes the compressed blocks to a file
+   44|      0|bool compress(const std::vector<uint16_t> &Data, const unsigned width, const unsigned height, const std::string Filename) {
+   45|      0|    std::ofstream output = createOutputFile(Filename);
+   46|      0|    writeHeader(output, width, height);
+   47|      0|    encodeBlocks(Data, output);
+   48|      0|    output.close();
+   49|      0|    return true;
+   50|      0|}
+   51|       |
+
+/Users/oliveryu/Desktop/CompressionTest/decompress.cpp:
+    1|       |//
+    2|       |//  Part3.cpp
+    3|       |//  Compression
+    4|       |//
+    5|       |//  Created by Alex Moyle on 2/19/19.
+    6|       |//  Copyright © 2019 Alex Moyle. All rights reserved.
+    7|       |//
+    8|       |
+    9|       |#include "Header.h"
+   10|       |
+   11|       |extern const std::string huff[];
+   12|       |//starts with a 32-bit magic number containing the bytes PBMC
+   13|       |//next contains a 4-byte little endian integer storing the image width
+   14|       |//next contains a 4-byte little endian integer storing the image height
+   15|       |//next contains the compressed bitstream
+   16|       |
+   17|       |std::optional<std::tuple<unsigned, unsigned, std::vector<uint16_t> *>>
+   18|      0|readCompressed(const std::string FileName) {
+   19|      0|    
+   20|      0|    std::ifstream input (FileName, std::ios::in | std::ios::binary);
+   21|      0|    std::vector<uint16_t>* byteData = new std::vector<uint16_t>;
+   22|      0|    
+   23|      0|    if (!input) {
+   24|      0|        std::cout << "Reading file failed";
+   25|      0|        exit(1);
+   26|      0|    }
+   27|      0|    
+   28|      0|    char magic [4];
+   29|      0|    char charWidth [4];
+   30|      0|    char charHeight [4];
+   31|      0|    
+   32|      0|    if (!input.read(magic,4)) {
+   33|      0|        std::cout << "Magic read failed";
+   34|      0|        exit(1);
+   35|      0|    }
+   36|      0|    //Assert that the first four magic letters are correct according to pbm compression
+   37|      0|    assert(magic[0]=='P');
+   38|      0|    assert(magic[1]=='B');
+   39|      0|    assert(magic[2]=='M');
+   40|      0|    assert(magic[3]=='C');
+   41|      0|    
+   42|      0|    if (!input.read(charWidth, 4)) {
+   43|      0|        std::cout<<"Width read failed";
+   44|      0|    }
+   45|      0|    if (!input.read(charHeight,4)) {
+   46|      0|        std::cout<<"Height read failed";
+   47|      0|    }
+   48|      0|    
+   49|      0|    uint32_t width = *reinterpret_cast<int*>(charWidth);
+   50|      0|    uint32_t height = *reinterpret_cast<int*>(charHeight);
+   51|      0|    
+   52|      0|    
+   53|      0|    //Take the huffman table and reverse it into a hashmap
+   54|      0|    std::map<std::string, uint16_t> hash;
+   55|      0|    for(int i = 0; i < 65536; i++) {
+   56|      0|        hash[huff[i]] = (uint16_t) i;
+   57|      0|    }
+   58|      0|    
+   59|      0|    //Now read in the bitstream
+   60|      0|    std::string concatBit= "";
+   61|      0|    while(true) {
+   62|      0|        if (input.peek() != EOF) {
+   63|      0|            char c [1];
+   64|      0|            input.read(c, 1);
+   65|      0|            for (int i = 7; i >= 0; i--) {
+   66|      0|                std::string temp = std::bitset<1>(c[0] >> i).to_string();
+   67|      0|                concatBit += temp;
+   68|      0|                if(hash.find(concatBit) != hash.end()) {
+   69|      0|                    byteData->push_back(hash.at(concatBit));
+   70|      0|                    //Reset the string
+   71|      0|                    concatBit = "";
+   72|      0|                }
+   73|      0|            }
+   74|      0|        } else {
+   75|      0|            break;
+   76|      0|        }
+   77|      0|    }
+   78|      0|    
+   79|      0|    //Cast width and height to unsigned
+   80|      0|    std::tuple tuple= std::make_tuple((unsigned)width, (unsigned)height, byteData);
+   81|      0|    
+   82|      0|    return tuple;
+   83|      0|}
+
+/Users/oliveryu/Desktop/CompressionTest/main.cpp:
+    1|       |
+    2|       |#define CATCH_CONFIG_RUNNER
+    3|       |
+    4|       |#include "Header.h"
+    5|       |#include "catch.hpp"
+    6|       |
+    7|      1|TEST_CASE("testbitToByteArrayEven") {
+    8|      1|    int height = 4, width = 8;
+    9|      1|    bool **expected = new bool *[height];
+   10|      1|
+   11|      1|    //initialize expected
+   12|      5|    for (int i = 0; i < height; ++i) {
+   13|      4|        expected[i] = new bool[width];
+   14|      4|    }
+   15|      1|
+   16|      5|    for (int i = 0; i < height; ++i) {
+   17|     36|        for (int j = 0; j < width; ++j) {
+   18|     32|            expected[i][j] = false;
+   19|     32|        }
+   20|      4|    }
+   21|      1|
+   22|      1|    expected[0][1] = true;
+   23|      1|    expected[1][2] = expected[1][3] = true;
+   24|      1|    expected[2][1] = true;
+   25|      1|    expected[3][2] = expected[3][3] = true;
+   26|      1|
+   27|      1|
+   28|      1|    std::istringstream input("@0@0");
+   29|      1|    bool **actual = bitToByteArr(input, width, width, height);
+   30|      1|
+   31|      5|    for (int i = 0; i < height; ++i) {
+   32|     36|        for (int j = 0; j < width; ++j) {
+   33|     32|            REQUIRE(expected[i][j] == actual[i][j]);
+   34|     32|        }
+   35|      4|    }
+   36|      1|}
+   37|       |
+   38|      1|TEST_CASE("testbitToByteArrOdd") {
+   39|      1|    int width = 8, height = 4;
+   40|      1|    bool **expected = new bool *[height];
+   41|      1|
+   42|      1|    //initialize expected
+   43|      5|    for (int i = 0; i < height; ++i) {
+   44|      4|        expected[i] = new bool[width];
+   45|      4|    }
+   46|      1|
+   47|      5|    for (int i = 0; i < height; ++i) {
+   48|     36|        for (int j = 0; j < width; ++j) {
+   49|     32|            expected[i][j] = false;
+   50|     32|        }
+   51|      4|    }
+   52|      1|
+   53|      1|    expected[0][1] = true;
+   54|      1|    expected[1][2] = expected[1][3] = true;
+   55|      1|    expected[2][1] = true;
+   56|      1|
+   57|      1|    std::istringstream input("@0@");
+   58|      1|    bool **actual = bitToByteArr(input, 7, width, height);
+   59|      1|
+   60|      5|    for (int i = 0; i < height; ++i) {
+   61|     36|        for (int j = 0; j < width; ++j) {
+   62|     32|            REQUIRE(expected[i][j] == actual[i][j]);
+   63|     32|        }
+   64|      4|    }
+   65|      1|
+   66|      1|}
+   67|       |
+   68|      1|TEST_CASE("pbmToMatrix") {
+   69|      1|    std::vector<uint16_t> expected;
+   70|      1|    expected.push_back(49858);
+   71|      1|    expected.push_back(0);
+   72|      1|
+   73|      1|    std::istringstream input("@0@0");
+   74|      1|    std::vector<uint16_t> *actual = pbmToMatrix(input, 8, 4);
+   75|      1|
+   76|      1|    REQUIRE(expected.size() == (*actual).size());
+   77|      1|    REQUIRE(expected == (*actual));
+   78|      1|}
+   79|       |
+   80|      1|TEST_CASE("pbmToMatrix2") {
+   81|      1|    std::vector<uint16_t> expected;
+   82|      1|    expected.push_back(706);
+   83|      1|    expected.push_back(0);
+   84|      1|
+   85|      1|    std::istringstream input("@0@");
+   86|      1|    std::vector<uint16_t> *actual = pbmToMatrix(input, 7, 3);
+   87|      1|
+   88|      1|    REQUIRE(expected.size() == (*actual).size());
+   89|      1|    REQUIRE(expected == (*actual));
+   90|      1|}
+   91|       |
+   92|      1|TEST_CASE("testReadPBMFileNotFound") {
+   93|      1|    std::optional<std::tuple<unsigned, unsigned, std::vector<uint16_t> *>> tuple = readPBM(
+   94|      1|            "testFiles/!QAZ@WSX#EDC.pbm");
+   95|      1|    REQUIRE(!tuple.has_value());
+   96|      1|}
+   97|       |
+   98|      1|TEST_CASE("testReadPBMDimensions") {
+   99|      1|    auto tuple = readPBM("testFiles/small1.pbm").value();
+  100|      1|    REQUIRE(std::get<0>(tuple) == 9);
+  101|      1|    REQUIRE(std::get<1>(tuple) == 9);
+  102|      1|}
+  103|       |
+  104|      1|TEST_CASE("testReadPBMDimensions2") {
+  105|      1|    auto tuple = readPBM("testFiles/example.pbm").value();
+  106|      1|    REQUIRE(std::get<0>(tuple) == 8);
+  107|      1|    REQUIRE(std::get<1>(tuple) == 4);
+  108|      1|}
+  109|       |
+  110|      1|TEST_CASE("testReadPBMDimensions3") {
+  111|      1|    auto tuple = readPBM("testFiles/x-0007.pbm").value();
+  112|      1|    REQUIRE(std::get<0>(tuple) == 3307);
+  113|      1|    REQUIRE(std::get<1>(tuple) == 4677);
+  114|      1|}
+  115|       |
+  116|      1|TEST_CASE("testREADPBMVector") {
+  117|      1|    auto tuple = readPBM("testFiles/example.pbm").value();
+  118|      1|    std::vector<uint16_t> expected;
+  119|      1|    expected.push_back(49858);
+  120|      1|    expected.push_back(0);
+  121|      1|
+  122|      1|    std::istringstream input("@0@0");
+  123|      1|    std::vector<uint16_t> *actual = std::get<2>(tuple);
+  124|      1|
+  125|      1|    REQUIRE(std::get<0>(tuple) == 8);
+  126|      1|    REQUIRE(std::get<1>(tuple) == 4);
+  127|      1|
+  128|      1|    REQUIRE(expected.size() == (*actual).size());
+  129|      1|    REQUIRE(expected == (*actual));
+  130|      1|}
+  131|       |
+  132|      0|std::ifstream::pos_type filesize(std::string filename) {
+  133|      0|    std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+  134|      0|    return in.tellg();
+  135|      0|}
+  136|       |
+  137|      1|int main(int argc, const char *argv[]) {
+  138|      1|    int result = Catch::Session().run(argc, argv);
+  139|      1|    return result;
+  140|      1|//    if(argc == 2) {
+  141|      1|//        if(strcmp(argv[1], "-t") == 0) {
+  142|      1|//            std::cout <<"here" << std::endl;
+  143|      1|//            int result = Catch::Session().run(argc, argv);
+  144|      1|//            return result;
+  145|      1|//        }else if(strcmp(argv[1], "-p") == 0) {
+  146|      1|//            for(int i = 0; i < 24; ++i) {
+  147|      1|//                std::optional<std::tuple<unsigned, unsigned, std::vector<uint16_t> *>> preTup;
+  148|      1|////        std::cout << "Reading file..." << std::endl;
+  149|      1|//                std::string fileName = "testFiles/x-00" + (i < 10 ? "0" + std::to_string(i) : std::to_string(i)) + ".pbm";
+  150|      1|//                preTup = readPBM(fileName);
+  151|      1|//                auto tuple = preTup.value();
+  152|      1|//
+  153|      1|////        std::cout << "Compressing..." << std::endl;
+  154|      1|//                if (compress(*std::get<2>(tuple), std::get<0>(tuple), std::get<1>(tuple), "pbmOutput")) {
+  155|      1|//                    auto test = readCompressed("pbmOutput");
+  156|      1|//                    std::tuple<unsigned, unsigned, std::vector<uint16_t> *> tuple2 = test.value();
+  157|      1|//                    unsigned wid = std::get<0> (tuple2);
+  158|      1|//                    unsigned height = std::get<1> (tuple2);
+  159|      1|//                    std::vector<uint16_t> *uin = std::get<2> (tuple2);
+  160|      1|////            std::cout << wid << std::endl;
+  161|      1|////            std::cout << height << std::endl;
+  162|      1|////            std::cout << uin->size() << std::endl;
+  163|      1|////            std::cout << "Making output..." << std::endl;
+  164|      1|//                    writePBM(*uin, wid, height, "finalOutput.pbm");
+  165|      1|//                } else {
+  166|      1|//                    std::cout << "compression failed" << std::endl;
+  167|      1|//                }
+  168|      1|//
+  169|      1|//                double original = filesize(fileName)/(double)1000000;
+  170|      1|//                double compressed = filesize("pbmOutput")/(double)1000000;
+  171|      1|//                std::cout << "x-00" + (i < 10 ? "0" + std::to_string(i) : std::to_string(i)) + "\t\t\t" << std::setprecision(3) << original << "MB\t\t" << compressed << "KB\t\t" << original/compressed << "\n";
+  172|      1|//            }
+  173|      1|//        }else {
+  174|      1|//            std::optional<std::tuple<unsigned, unsigned, std::vector<uint16_t> *>> preTup;
+  175|      1|//            std::cout << "Reading file..." << std::endl;
+  176|      1|//            preTup = readPBM(argv[1]);
+  177|      1|//            auto tuple = preTup.value();
+  178|      1|//
+  179|      1|//            std::cout << "Compressing..." << std::endl;
+  180|      1|//            if (compress(*std::get<2>(tuple), std::get<0>(tuple), std::get<1>(tuple), "pbmOutput")) {
+  181|      1|//                auto test = readCompressed("pbmOutput");
+  182|      1|//                std::tuple<unsigned, unsigned, std::vector<uint16_t> *> tuple2 = test.value();
+  183|      1|//                unsigned wid = std::get<0>(tuple2);
+  184|      1|//                unsigned height = std::get<1>(tuple2);
+  185|      1|//                std::vector<uint16_t> *uin = std::get<2>(tuple2);
+  186|      1|//                std::cout << wid << std::endl;
+  187|      1|//                std::cout << height << std::endl;
+  188|      1|//                std::cout << uin->size() << std::endl;
+  189|      1|//                std::cout << "Making output..." << std::endl;
+  190|      1|//                writePBM(*uin, wid, height, "finalOutput.pbm");
+  191|      1|//            } else {
+  192|      1|//                std::cout << "compression failed" << std::endl;
+  193|      1|//            }
+  194|      1|//        }
+  195|      1|//    }else {
+  196|      1|//        std::cout << "No file name given" << std::endl;
+  197|      1|//    }
+  198|      1|//    return 0;
+  199|      1|}
+
+/Users/oliveryu/Desktop/CompressionTest/readPBM.cpp:
+    1|       |//
+    2|       |// Created by Oliver Yu on 2019-02-18.
+    3|       |//
+    4|       |
+    5|       |//#include "Header.h"
+    6|       |#include "readPBM.h"
+    7|       |
+    8|       |bool **bitToByteArr(std::istream &input, const unsigned int &width, const unsigned int &arrWidth,
+    9|      8|                    const unsigned int &arrHeight) {
+   10|      8|
+   11|      8|    //make arr on heap b/c stack is not big enough
+   12|      8|    bool **arr = new bool *[arrHeight];
+   13|      8|
+   14|      8|    //initialize arr
+   15|  4.72k|    for (int i = 0; i < arrHeight; ++i) {
+   16|  4.71k|        arr[i] = new bool[arrWidth];
+   17|  4.71k|    }
+   18|      8|
+   19|  4.72k|    for (int i = 0; i < arrHeight; ++i) {
+   20|  15.5M|        for (int j = 0; j < arrWidth; ++j) {
+   21|  15.5M|            arr[i][j] = false;
+   22|  15.5M|        }
+   23|  4.71k|    }
+   24|      8|
+   25|      8|    int rowIdx = 0, colIdx = 0;
+   26|      8|
+   27|      8|    char byte;
+   28|      8|
+   29|      8|    //read in all the bytes
+   30|      8|    int counter = 0;
+   31|  1.93M|    while (input.read(&byte, 1)) {
+   32|  1.93M|        counter++;
+   33|  17.4M|        for (int i = 7; i >= 0; --i) {
+   34|  15.4M|            //add bit to current row if its within bounds
+   35|  15.4M|            if (colIdx == arrWidth) {
+   36|  4.70k|//                if (++rowIdx >= arrHeight) {
+   37|  4.70k|//                    break;
+   38|  4.70k|//                }
+   39|  4.70k|                rowIdx++;
+   40|  4.70k|                colIdx = 0;
+   41|  4.70k|            }
+   42|  15.4M|            arr[rowIdx][colIdx++] = (byte >> i) & 1;
+   43|  15.4M|        }
+   44|  1.93M|    }
+   45|      8|
+   46|      8|//    std::cout << counter << std::endl;
+   47|      8|
+   48|      8|//    for(int i = 0; i < arrHeight; ++i) {
+   49|      8|//        for(int j = 0; j < arrWidth; ++j) {
+   50|      8|//            std::cout << arr[i][j] << " ";
+   51|      8|//        }
+   52|      8|//        std::cout << "\n";
+   53|      8|//    }
+   54|      8|    return arr;
+   55|      8|}
+   56|       |
+   57|      6|std::vector<uint16_t> *pbmToMatrix(std::istream &input, const unsigned int &width, const unsigned int &height) {
+   58|      6|    unsigned int arrWidth = width % 8 == 0 ? width : width + 8 - (width % 8);
+   59|      6|    unsigned int arrHeight = height % 4 == 0 ? height : height + 4 - (height % 4);
+   60|      6|
+   61|      6|    bool **bitToByte = bitToByteArr(input, width, arrWidth, arrHeight);
+   62|      6|
+   63|      6|    std::vector<uint16_t> *ret = new std::vector<uint16_t>;
+   64|      6|    int i, j;
+   65|  1.18k|    for (i = 3; i < arrHeight; i += 4) {
+   66|   969k|        for (j = 3; j < arrWidth; j += 4) {
+   67|   968k|            uint16_t matrix = 0;
+   68|   968k|
+   69|   968k|            //number of bits to shift for the 4x4 matrix
+   70|   968k|            int counter = 15;
+   71|  4.84M|            for (int y = i; y >= i - 3; --y) {
+   72|  19.3M|                for (int x = j; x >= j - 3; --x) {
+   73|  15.5M|                    matrix |= ((uint16_t) bitToByte[y][x] << counter--);
+   74|  15.5M|                }
+   75|  3.87M|            }
+   76|   968k|            ret->push_back(matrix);
+   77|   968k|        }
+   78|  1.17k|    }
+   79|      6|
+   80|      6|    return ret;
+   81|      6|}
+   82|       |
+   83|      5|std::optional<std::tuple<unsigned, unsigned, std::vector<uint16_t> *>> readPBM(const std::string FileName) {
+   84|      5|    std::ifstream input(FileName);
+   85|      5|    std::string currLine;
+   86|      5|
+   87|      5|    unsigned int width;
+   88|      5|    unsigned int height;
+   89|      5|    std::vector<uint16_t> *values;
+   90|      5|
+   91|      5|    if (input.is_open()) {
+   92|      4|        //from https://stackoverflow.com/questions/132358/how-to-read-file-content-into-istringstream
+   93|      4|//        input.seekg(0,std::ios::end);
+   94|      4|//        std::streampos len = input.tellg();
+   95|      4|//        input.seekg(0,std::ios::beg);
+   96|      4|//
+   97|      4|//        std::vector<char> buffer(len);
+   98|      4|//        input.read(&buffer[0],len);
+   99|      4|//
+  100|      4|//        std::stringstream localStream;
+  101|      4|//        localStream.rdbuf()->pubsetbuf(&buffer[0],len);
+  102|      4|//        input.close(); //close file stream
+  103|      4|//
+  104|      4|//        //skip first line
+  105|      4|
+  106|      4|//        std::cout << currLine << std::endl;
+  107|      4|        getline(input, currLine);
+  108|      4|        assert(currLine == "P4");
+  109|      4|
+  110|      4|        //skip all the comments if any
+  111|      4|        getline(input, currLine);
+  112|      6|        while (currLine[0] == '#') {
+  113|      2|            getline(input, currLine);
+  114|      2|        }
+  115|      4|
+  116|      4|        std::regex delim("\\s+");
+  117|      4|        std::vector<std::string> dimensions{
+  118|      4|                std::sregex_token_iterator(currLine.begin(), currLine.end(), delim, -1), {}
+  119|      4|        };
+  120|      4|
+  121|      4|        width = std::stoi(dimensions[0]);
+  122|      4|        height = std::stoi(dimensions[1]);
+  123|      4|
+  124|      4|        assert(width > 0);
+  125|      4|        assert(height > 0);
+  126|      4|
+  127|      4|        std::stringstream newStream;
+  128|      4|        newStream << input.rdbuf();
+  129|      4|        input.close();
+  130|      4|
+  131|      4|        values = pbmToMatrix(newStream, width, height);
+  132|      4|        return std::make_tuple(width, height, values);
+  133|      4|
+  134|      4|    }
+  135|      1|
+  136|      1|    return {};
+  137|      1|}
+
+/Users/oliveryu/Desktop/CompressionTest/write.cpp:
+    1|       |//
+    2|       |//  write.cpp
+    3|       |//  PBMCompress
+    4|       |//
+    5|       |//  Created by Alexander Sloan on 2/13/19.
+    6|       |//  Copyright © 2019 Alexander Sloan. All rights reserved.
+    7|       |//
+    8|       |
+    9|       |//This is group 6's part 4
+   10|       |#include "Header.h"
+   11|       |//Natalie
+   12|       |
+   13|       |//function to write a byte to the file
+   14|      0|void writeBytes (const std::vector<uint16_t>& vec, std::ofstream &stream, int counter, int maxWidth, int shiftValue){
+   15|      0|    unsigned firstFour = 0;
+   16|      0|    unsigned secondFour = 0;
+   17|      0|    for(int i=counter; i<maxWidth+counter; i+=2){
+   18|      0|        firstFour = vec[i]>>shiftValue &0xF;;
+   19|      0|        if(i==maxWidth-1){
+   20|      0|            secondFour = 0;
+   21|      0|        }else{
+   22|      0|            secondFour = vec[i+1]>>shiftValue &0xF;
+   23|      0|        }
+   24|      0|        unsigned char result = ((firstFour << 4) | secondFour);
+   25|      0|        stream << result;
+   26|      0|
+   27|      0|    }
+   28|      0|}
+   29|       |
+   30|       |//function to reverse a uint16
+   31|      0|uint16_t reverseInt16(uint16_t nonReversed){
+   32|      0|    uint16_t reversed = 0;
+   33|      0|
+   34|      0|    for ( uint16_t i = 0; i < 16; i++ )
+   35|      0|    {
+   36|      0|        reversed |= ( nonReversed >> ( 16 - i - 1 ) & 1 ) << i;
+   37|      0|    }
+   38|      0|
+   39|      0|    return reversed;
+   40|      0|}
+   41|       |
+   42|       |bool writePBM(const std::vector<uint16_t> &Data, const unsigned Width,
+   43|      0|              const unsigned Height, const std::string FileName){
+   44|      0|    std::ofstream os (FileName);
+   45|      0|
+   46|      0|    if(!os){
+   47|      0|        std::cerr<<"Unable to open file";
+   48|      0|        return false;
+   49|      0|    }
+   50|      0|
+   51|      0|    os<<"P4"<<std::endl;
+   52|      0|    os<<Width<<" "<<Height<<std::endl;
+   53|      0|
+   54|      0|
+   55|      0|    std::vector<uint16_t> reversedInts;
+   56|      0|    for(uint16_t u: Data){
+   57|      0|        uint16_t temp = reverseInt16(u);
+   58|      0|        reversedInts.push_back(temp);
+   59|      0|    }
+   60|      0|
+   61|      0|    int chunksInRow = Width/4;
+   62|      0|    int leftoverInRow = Width%4;
+   63|      0|
+   64|      0|    int chunksInCol = Height/4;
+   65|      0|    int leftoverInCol = Height%4;
+   66|      0|
+   67|      0|    int maxWidth = 0;
+   68|      0|    int maxHeight = 0;
+   69|      0|
+   70|      0|    if (leftoverInRow == 0){
+   71|      0|        maxWidth = chunksInRow;
+   72|      0|    }else{
+   73|      0|        maxWidth = chunksInRow+1;
+   74|      0|    }
+   75|      0|
+   76|      0|    maxHeight = chunksInCol;
+   77|      0|
+   78|      0|    int counter = 0;
+   79|      0|
+   80|      0|    for(int j=0; j<maxHeight; j++){
+   81|      0|
+   82|      0|        writeBytes(reversedInts, os, counter, maxWidth, 12);
+   83|      0|
+   84|      0|        writeBytes(reversedInts, os, counter, maxWidth, 8);
+   85|      0|
+   86|      0|        writeBytes(reversedInts, os, counter, maxWidth, 4);
+   87|      0|
+   88|      0|        writeBytes(reversedInts, os, counter, maxWidth, 0);
+   89|      0|
+   90|      0|        if(maxWidth%2==0){
+   91|      0|        counter+=maxWidth;
+   92|      0|        }else{
+   93|      0|            counter+=maxWidth+1;
+   94|      0|        }
+   95|      0|
+   96|      0|    }
+   97|      0|
+   98|      0|    //accounting for the height not being an even amount of 4x4 blocks
+   99|      0|    if(leftoverInCol != 0){
+  100|      0|        if(leftoverInCol == 1){
+  101|      0|            writeBytes(reversedInts, os, counter, maxWidth, 12);
+  102|      0|        }
+  103|      0|
+  104|      0|        if(leftoverInCol == 2){
+  105|      0|            writeBytes(reversedInts, os, counter, maxWidth, 12);
+  106|      0|            writeBytes(reversedInts, os, counter, maxWidth, 8);
+  107|      0|        }
+  108|      0|
+  109|      0|        if(leftoverInCol == 3){
+  110|      0|            writeBytes(reversedInts, os, counter, maxWidth, 12);
+  111|      0|            writeBytes(reversedInts, os, counter, maxWidth, 8);
+  112|      0|            writeBytes(reversedInts, os, counter, maxWidth, 4);
+  113|      0|
+  114|      0|        }
+  115|      0|    }
+  116|      0|    return true;
+  117|      0|}
+
